@@ -89,6 +89,3 @@ Easy Launcher vuole offrire **autonomia digitale** a chi spesso viene escluso da
 Easy Launcher è in sviluppo attivo.  
 Ogni contributo è prezioso: idee, feedback, miglioramenti, test con utenti reali.
 
----
-
-Se vuoi, posso preparare anche una **versione Play Store**, una **versione super breve**, oppure una **versione emozionale per caregiver e familiari**.
