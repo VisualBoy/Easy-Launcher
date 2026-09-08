@@ -89,3 +89,8 @@ Easy Launcher vuole offrire **autonomia digitale** a chi spesso viene escluso da
 Easy Launcher è in sviluppo attivo.  
 Ogni contributo è prezioso: idee, feedback, miglioramenti, test con utenti reali.
 
+---
+
+## TO-DO
+- **Riconoscimento e lettura ricette mediche** tramite [ML Kit Digital Ink Recognition](https://github.com/googlesamples/mlkit/tree/master/android/digitalink)
+
