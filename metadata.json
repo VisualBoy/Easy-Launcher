@@ -1,6 +1,8 @@
 {
-  "name": "",
-  "description": "",
+  "name": "Easy App",
+  "description": "App accessibile per anziani e assistenza rapida con tasti grandi, emergenza SOS, WhatsApp, torcia e comandi facili",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
