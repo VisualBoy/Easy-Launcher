@@ -91,6 +91,4 @@ Ogni contributo è prezioso: idee, feedback, miglioramenti, test con utenti real
 
 ---
 
-## TO-DO
-- **Riconoscimento e lettura ricette mediche** tramite [ML Kit Digital Ink Recognition](https://github.com/googlesamples/mlkit/tree/master/android/digitalink)
-
+Se vuoi, posso preparare anche una **versione Play Store**, una **versione super breve**, oppure una **versione emozionale per caregiver e familiari**.
