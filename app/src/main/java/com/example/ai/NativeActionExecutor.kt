@@ -11,7 +11,7 @@ import com.example.accessibility.NotificationRepository
 import com.example.accessibility.SosManager
 import com.example.accessibility.TorchController
 import com.example.notifications.WhatsAppNotificationService
-import com.example.services.WhatsAppAccessibilityFallbackService
+import com.example.services.AccessibilityFallbackService
 import kotlinx.coroutines.CoroutineScope
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -81,7 +81,7 @@ class NativeActionExecutor(
                 contact?.phoneNumber ?: recipient
             }
 
-            WhatsAppAccessibilityFallbackService.launchFallback(context, phone, message)
+            AccessibilityFallbackService.launchFallback(context, phone, message)
 
             result.put("status", "success")
             result.put("method", "AccessibilityFallback")

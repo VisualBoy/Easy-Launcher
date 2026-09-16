@@ -382,13 +382,13 @@ class SosEmergencyForegroundService : Service() {
                     putExtra(Intent.EXTRA_STREAM, audioUri)
                     putExtra(Intent.EXTRA_TEXT, fullWhatsAppMessage)
                     putExtra("jid", "$formattedPhone@s.whatsapp.net")
-                    setPackage(WhatsAppAccessibilityFallbackService.PKG_WHATSAPP)
+                    setPackage(AccessibilityFallbackService.PKG_WHATSAPP)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 startActivity(sendIntent)
             } else {
                 // Deep link fallback
-                WhatsAppAccessibilityFallbackService.launchFallback(
+                AccessibilityFallbackService.launchFallback(
                     context = this,
                     phoneNumber = phoneToSend,
                     message = fullWhatsAppMessage
@@ -396,7 +396,7 @@ class SosEmergencyForegroundService : Service() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to launch WhatsApp send intent, attempting fallback deep link", e)
-            WhatsAppAccessibilityFallbackService.launchFallback(
+            AccessibilityFallbackService.launchFallback(
                 context = this,
                 phoneNumber = phoneToSend,
                 message = fullWhatsAppMessage

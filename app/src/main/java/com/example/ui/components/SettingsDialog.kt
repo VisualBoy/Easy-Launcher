@@ -27,7 +27,8 @@ import com.example.accessibility.TorchController
 import com.example.accessibility.TtsManager
 import com.example.model.ContactItem
 import com.example.notifications.WhatsAppNotificationService
-import com.example.services.WhatsAppAccessibilityFallbackService
+import com.example.services.AccessibilityFallbackService
+import com.example.services.FloatingOverlayService
 import com.example.ui.theme.CardPhoneGreen
 import com.example.ui.theme.CardSettingsGold
 import com.example.ui.theme.CardSosRed
@@ -45,7 +46,10 @@ fun SettingsDialog(
         mutableStateOf(WhatsAppNotificationService.isNotificationServiceEnabled(context))
     }
     var isAccessEnabled by remember {
-        mutableStateOf(WhatsAppAccessibilityFallbackService.isAccessibilityServiceEnabled(context))
+        mutableStateOf(AccessibilityFallbackService.isAccessibilityServiceEnabled(context))
+    }
+    var isOverlayActive by remember {
+        mutableStateOf(FloatingOverlayService.isRunning)
     }
 
     val contacts by sosManager.emergencyContacts.collectAsState()
@@ -186,7 +190,7 @@ fun SettingsDialog(
                                 }
                                 Button(
                                     onClick = {
-                                        WhatsAppAccessibilityFallbackService.openAccessibilitySettings(context)
+                                        AccessibilityFallbackService.openAccessibilitySettings(context)
                                     },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (isAccessEnabled) Color(0xFF334155) else CardPhoneGreen
@@ -195,6 +199,48 @@ fun SettingsDialog(
                                 ) {
                                     Text(if (isAccessEnabled) "Verifica" else "Attiva")
                                 }
+                            }
+                        }
+                    }
+
+                    // 1b. Floating Assistant Service Control
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Assistente Flottante a Schermo",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    )
+                                    Text(
+                                        text = if (isOverlayActive) "Attivo (Icona vocale sempre visibile sopra le altre app)" else "Icona rapida per usare l'assistente ovunque",
+                                        color = if (isOverlayActive) Color(0xFF00E5FF) else Color(0xFF94A3B8),
+                                        fontSize = 13.sp
+                                    )
+                                }
+                                Switch(
+                                    checked = isOverlayActive,
+                                    onCheckedChange = { enable ->
+                                        if (enable) {
+                                            FloatingOverlayService.start(context)
+                                        } else {
+                                            FloatingOverlayService.stop(context)
+                                        }
+                                        isOverlayActive = FloatingOverlayService.isRunning
+                                    }
+                                )
                             }
                         }
                     }
