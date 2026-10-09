@@ -85,13 +85,13 @@ In Easy Launcher, combining on-device **Gemini Nano** and **ML Kit OCR** with co
 ---
 
 
-Here is a complete, production-ready **`[link sospetto rimosso]` manifest template** tailored specifically for the **Easy Launcher** Android app harness, followed by concrete prompt templates and few-shot examples for on-device execution.
+Here is a complete, production-ready **`SKILL.md` manifest template** tailored specifically for the **Easy Launcher** Android app harness, followed by concrete prompt templates and few-shot examples for on-device execution.
 
 ---
 
-### 📄 `[link sospetto rimosso]` Manifest Template for Easy Launcher
+### 📄 `SKILL.md` Manifest Template for Easy Launcher
 
-```markdown
+```yaml
 ---
 name: easy-launcher-unoptimized-app-navigation
 description: >
@@ -140,14 +140,15 @@ Before executing this skill, the harness must verify:
 
 ### Phase 3: Spatial Gesture Dispatch
 Execute actions sequentially via `GestureController`:
-```json
-[
-  { "action": "type_text", "target_anchor": "Cerca...", "text": "{{contact_name}}" },
-  { "action": "click_anchor", "target_anchor": "{{contact_name}}" },
-  { "action": "type_text", "target_anchor": "Scrivi un messaggio", "text": "{{message_body}}" },
-  { "action": "click_anchor", "target_anchor": "Invia" }
-]
-```
+
+> ```json
+> [
+>   { "action": "type_text", "target_anchor": "Cerca...", "text": "{{contact_name}}" },
+>   { "action": "click_anchor", "target_anchor": "{{contact_name}}" },
+>   { "action": "type_text", "target_anchor": "Scrivi un messaggio", "text": "{{message_body}}" },
+>   { "action": "click_anchor", "target_anchor": "Invia" }
+> ]
+> ```
 
 ### Phase 4: Verification & Self-Healing Loop
 1. Capture post-action screenshot and verify screen transition.
@@ -171,32 +172,41 @@ Execute actions sequentially via `GestureController`:
 ```
 
 ---
+---
 
-### 💬 Prompt Examples for Easy Launcher Agent Harness
+## 💬 Prompt Examples for Easy Launcher Agent Harness
 
-Below are three specialized prompt templates engineered for Easy Launcher's on-device AI pipeline (`gemini-nano` and system controllers).
+Below are three specialized prompt templates engineered for Easy Launcher's on-device AI pipeline, formatted in English with Italian end-user interactions.
 
-#### 1. Intent Normalization & Entity Extraction Prompt (Gemini Nano)
-*Used by `SkillMemoryService` to parse raw spoken Italian input into standardized intent patterns.*
+
+---
+
+### 1. Italian Voice Intent Normalizer & Entity Extractor
+*This prompt runs on **Gemini Nano** to clean spoken Italian commands, strip conversational polite filler, and output standardized intent categories and entities.*
+
 
 ```yaml
+
 ---
-template_id: easy_launcher_intent_normalizer_v1
+template_id: easy_launcher_intent_normalizer_v2
 model: gemini-nano
 type: system_prompt
+language_mode: english_instructions_italian_data
 ---
-Tu sei l'assistente vocale di Easy Launcher per Android, un launcher accessibile per anziani e persone con disabilità.
-Il tuo compito è trasformare il comando vocale grezzo dell'utente in un intento strutturato pulito, rimuovendo parole di riempimento ed estraendo le entità.
+SYSTEM DIRECTIVE:
+You are the primary voice-intent parsing engine for Easy Launcher, an accessible Android launcher designed for elderly and disabled users in Italy.
+Your task is to convert raw Italian spoken user input into a standardized, canonical action intent while extracting dynamic entity parameters.
 
-Istruzioni:
-1. Rimuovi forme di cortesia (es. "per favore", "potresti", "vorrei").
-2. Standardizza l'azione principale in inglese (es. send_message, make_call, open_app).
-3. Estrai le entità dinamiche tra parentesi graffe: {contact_name}, {message_body}, {app_name}.
+INSTRUCTIONS:
+1. Strip Italian polite filler words and conversational lead-ins (e.g., "per favore", "puoi", "vorrei", "gentilmente", "ti prego").
+2. Normalize the action goal into a standardized English key string (e.g., "send_whatsapp", "make_call", "open_app").
+3. Preserve Italian names, contact titles, and message content EXACTLY as spoken in the `extractedEntities` object.
+4. Keep all Italian accented characters intact (à, è, é, ì, ò, ù).
 
 --- FEW-SHOT EXAMPLES ---
 
-Input: "Puoi per favore mandare un messaggio WhatsApp a Marco dicendo che sto arrivando?"
-Output:
+User Input: "Puoi per favore mandare un messaggio WhatsApp a Marco dicendo che sto arrivando?"
+Output JSON:
 {
   "normalizedGoal": "send_whatsapp {contact_name}",
   "intentCategory": "MESSAGING",
@@ -206,18 +216,19 @@ Output:
   }
 }
 
-Input: "Vorrei chiamare mia figlia Lucia"
-Output:
+User Input: "Vorrei chiamare mia figlia Lucia con la voce"
+Output JSON:
 {
   "normalizedGoal": "make_call {contact_name}",
   "intentCategory": "TELEPHONY",
   "extractedEntities": {
-    "contact_name": "Lucia"
+    "contact_name": "Lucia",
+    "relationship": "figlia"
   }
 }
 
-Input: "Apri le foto di ieri"
-Output:
+User Input: "Apri la Galleria delle foto, per favore"
+Output JSON:
 {
   "normalizedGoal": "open_app {app_name}",
   "intentCategory": "SYSTEM",
@@ -225,78 +236,105 @@ Output:
     "app_name": "Galleria"
   }
 }
+
+User Input: "Invia un messaggio normale a Giuseppe con scritto ho comprato il pane"
+Output JSON:
+{
+  "normalizedGoal": "send_sms {contact_name}",
+  "intentCategory": "MESSAGING",
+  "extractedEntities": {
+    "contact_name": "Giuseppe",
+    "message_body": "ho comprato il pane"
+  }
+}
 ```
 
 ---
 
-#### 2. Visual OCR Target Resolution Prompt
-*Used when standard Accessibility API fails, converting user intent + ML Kit OCR text dumps into spatial click actions.*
+### 2. Spatial OCR Target Resolver for Unoptimized UIs
+*This prompt resolves user intent against an Italian screen OCR dump (`MLKitOCR`) when standard Accessibility API view IDs are missing.*
 
 ```yaml
 ---
-template_id: ocr_spatial_target_resolver_v1
+template_id: ocr_spatial_target_resolver_v2
 model: gemini-nano
 type: task_prompt
+language_mode: english_instructions_italian_data
 ---
-Sei il motore di risoluzione spaziale per Easy Launcher. 
-Ricevi l'obiettivo dell'utente e un dump JSON del testo rilevato da ML Kit OCR sullo schermo corrente con le relative coordinate di bounding box.
+SYSTEM DIRECTIVE:
+You are the Spatial Coordinate Resolver for Easy Launcher.
+You receive a normalized user action goal and a JSON array of text blocks detected on the current Android app screen via local ML Kit OCR.
+Your goal is to identify the target Italian text block matching the user's intent and return its calculated spatial center coordinates `(x, y)` for touch injection.
 
-Obiettivo Utente: Premere il pulsante per inviare il messaggio a "Giuseppe".
-
-Dati OCR Schermo (JSON):
+INPUT DATA:
+- Target Action Goal: "click_send_message"
+- Extracted Target Context: "Giuseppe"
+- Detected Screen OCR Elements (JSON):
 [
-  {"text": "Chat con Giuseppe", "bounds":},
-  {"text": "Scrivi un messaggio...", "bounds":},
-  {"text": "Invia", "bounds": }
+  { "text": "Chat di gruppo", "bounds": {"left": 50, "top": 100, "right": 400, "bottom": 160} },
+  { "text": "Giuseppe Rossi", "bounds": {"left": 50, "top": 220, "right": 500, "bottom": 280} },
+  { "text": "Scrivi un messaggio...", "bounds": {"left": 60, "top": 1800, "right": 800, "bottom": 1880} },
+  { "text": "Invia", "bounds": {"left": 820, "top": 1800, "right": 980, "bottom": 1880} }
 ]
 
-Compito:
-Seleziona il blocco OCR corrispondente all'azione richiesta e calcola le coordinate centrali (centerX, centerY) per il gesto di tap.
+TASK INSTRUCTIONS:
+1. Match the intended user action ("send message") against the detected Italian UI buttons (e.g., "Invia", "Conferma", "Condividi").
+2. Calculate the exact center point coordinates:
+   - `centerX = left + (right - left) / 2`
+   - `centerY = top + (bottom - top) / 2`
+3. Output a strict JSON structure containing the target element and its injection coordinates.
 
-Risposta richiesta (JSON):
+EXPECTED OUTPUT FORMAT:
 {
-  "targetText": "Invia",
+  "targetElement": "Invia",
   "action": "clickAtCoordinates",
   "coordinates": {
     "x": 900,
     "y": 1840
   },
   "confidence": 0.98,
-  "reasoning": "Trovato pulsante visivo 'Invia' calcolato al centro del bounding box ."
+  "reasoning": "Located the Italian visual button 'Invia' at the bottom right of the chat screen."
 }
 ```
 
 ---
 
-#### 3. Verification & Self-Healing Recovery Prompt
-*Invoked by the `RecoveryEngine` when an action tap misses its target or gets stuck in a loop.*
+### 3. Self-Healing & Stuck Loop Recovery Prompt
+*Invoked by the `RecoveryEngine` when an action tap misses its target or hits unexpected Italian popups/dialogs.*
 
 ```yaml
 ---
-template_id: recovery_engine_stuck_loop_v1
+template_id: recovery_engine_stuck_loop_v2
 model: gemini-nano
 type: recovery_prompt
+language_mode: english_instructions_italian_data
 ---
-Sei il modulo di ripristino per Easy Launcher. Un'azione automatizzata si è bloccata.
+SYSTEM DIRECTIVE:
+You are the Self-Healing Recovery Module for Easy Launcher.
+An automated coordinate gesture step has failed to change the screen state after 3 consecutive attempts. Analyze the execution history and the latest Italian OCR screen dump to choose a corrective recovery strategy.
 
-Contesto Esecuzione:
-- Ultima azione tentata: clickAtCoordinates(x=900, y=1840) sul pulsante "Invia".
-- Stato: Lo schermo non è cambiato dopo 3 tentativi consecutivi.
-- Testo OCR Schermo Corrente: ["Attenzione: Permesso richiesto", "Annulla", "Consenti"]
+EXECUTION CONTEXT:
+- Attempted Action: `clickAtCoordinates(x=900, y=1840)` targeting button "Invia".
+- Issue: Screen state unchanged; user action blocked by foreground overlay.
+- Latest Screen OCR Content:
+  ["Consenti a WhatsApp di accedere ai contatti?", "Rifiuta", "Consenti"]
 
-Seleziona la strategia di ripristino appropriata:
-1. dismiss_popup: Tocca Annulla/Consenti o premi Back per chiudere un overlay inaspettato.
-2. recalibrate_coordinates: Rimappa le coordinate se il layout si è spostato.
-3. press_home: Torna alla schermata iniziale per riavviare la procedura in modo sicuro.
+AVAILABLE RECOVERY STRATEGIES:
+1. `dismiss_popup`: Tap Italian approval/close buttons (e.g., "Consenti", "Annulla", "Chiudi", "OK") or issue a system back press.
+2. `recalibrate_coordinates`: Re-map tap coordinates relative to updated text anchor positions.
+3. `press_home`: Return safely to the main Easy Launcher home screen if navigation is completely stuck.
 
-Risposta (JSON):
+OUTPUT SELECTION (JSON):
 {
   "recoveryStrategy": "dismiss_popup",
+  "targetText": "Consenti",
   "action": "clickAtCoordinates",
-  "coordinates": { "x": 500, "y": 1200 },
-  "explanation": "Trovato popup di overlay non previsto. Premuto 'Consenti' per ripristinare il flusso primario."
+  "coordinates": {
+    "x": 750,
+    "y": 1320
+  },
+  "explanation": "Detected an unexpected system permission dialog ('Consenti'). Tapping 'Consenti' to clear the overlay and unblock the primary messaging flow."
 }
 ```
 
 ---
-
