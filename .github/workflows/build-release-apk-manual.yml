@@ -1,0 +1,101 @@
+name: Build and Release APK (on tag)
+
+on:
+  push:
+    # esegui solo quando viene pushato un tag che inizia con "v"
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    if: startsWith(github.ref, 'refs/tags/')  # ulteriore guardia
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository (fetch tags + full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      # --- Keystore: decodifica se stai facendo una release firmata ---
+      - name: Restore release keystore (from secret)
+        if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > release.keystore
+          ls -l release.keystore
+
+      # se non firmi (o fai debug), puoi mantenere il blocco debug-keystore come fallback
+      - name: Generate Debug Keystore (fallback)
+        if: ${{ secrets.RELEASE_KEYSTORE_BASE64 == '' }}
+        run: |
+          if [ ! -f "debug.keystore" ]; then
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      # --- Build: puoi scegliere assembleRelease o assembleDebug a seconda del tag ---
+      - name: Build Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          # Se hai un keystore fornito, passa le proprietà di signing a Gradle.
+          if [ -f release.keystore ]; then
+            ./gradlew :app:assembleRelease \
+              -Pandroid.injected.signing.store.file=release.keystore \
+              -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+              -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+              -Pandroid.injected.signing.key.password="$KEY_PASSWORD" \
+              --stacktrace --no-daemon
+          else
+            ./gradlew :app:assembleDebug --stacktrace --no-daemon
+          fi
+
+      - name: Verify APK
+        run: |
+          APK_PATH="app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          fi
+          if [ ! -f "$APK_PATH" ]; then
+            echo "Error: APK not found."
+            ls -R app/build/outputs/apk || true
+            exit 1
+          fi
+          echo "Found APK at $APK_PATH"
+          echo "APK_PATH=$APK_PATH" >> $GITHUB_ENV
+
+      - name: Upload artifact (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: ${{ env.APK_PATH }}
+
+      - name: Create GitHub Release and upload asset (softprops)
+        uses: softprops/action-gh-release@v1
+        with:
+          # softprops legge il tag da github.ref; files accetta una lista separata da spazi
+          files: ${{ env.APK_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
