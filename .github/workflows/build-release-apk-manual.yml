@@ -1,10 +1,8 @@
-name: Build and Release APK manual
+name: Build APK on Release Created
 
 on:
-  push:
-    # esegui solo quando viene pushato un tag che inizia con "v"
-    tags:
-      - 'v*'
+  release:
+    types: [created]
   workflow_dispatch:
 
 concurrency:
