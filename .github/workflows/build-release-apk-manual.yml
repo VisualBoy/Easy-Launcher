@@ -1,4 +1,4 @@
-name: Build and Release APK (on tag)
+name: Build and Release APK manual
 
 on:
   push:
